@@ -1,11 +1,11 @@
-import jsonp from 'common/js/jsonp';
-import {
-  commonParams,
-  options
-} from './config'
+import Axios from 'axios'
+import jsonp from 'common/js/jsonp'
+import axios from 'axios'
+import { commonParams, options } from './config'
 
 export function getRecommend() {
-  const url = 'https://c.y.qq.com/musichall/fcgi-bin/fcg_yqqhomepagerecommend.fcg'
+  const url =
+    'https://c.y.qq.com/musichall/fcgi-bin/fcg_yqqhomepagerecommend.fcg'
 
   const data = Object.assign({}, commonParams, {
     palform: 'h5',
@@ -14,12 +14,12 @@ export function getRecommend() {
   })
 
   return jsonp(url, data, options)
-};
+}
 
-export function getDiscList(){
-  const url = 'https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg'
+export function getDiscList() {
+  const url = '/api/getDiscLists'
 
-  const data = Object.assign({},commonParams,{
+  const data = Object.assign({}, commonParams, {
     platform: 'yqq',
     hostUin: 0,
     sin: 0,
@@ -30,6 +30,12 @@ export function getDiscList(){
     rnd: Math.random(),
     format: 'json'
   })
-  
-  return jsonp(url, data, options)
+
+  return axios
+    .get(url, {
+      params: data
+    })
+    .then(res => {
+      return Promise.resolve(res.data)
+    })
 }
