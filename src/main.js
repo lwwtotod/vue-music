@@ -12,7 +12,7 @@ Vue.config.productionTip = false
 fastclick.attach(document.body)
 
 Vue.use(lazyload,{
-  loading:require('common/image/default.png')
+  loading:require('common/image/loading.gif')
 })
 /* eslint-disable no-new */
 new Vue({
