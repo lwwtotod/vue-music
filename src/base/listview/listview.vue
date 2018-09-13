@@ -37,6 +37,9 @@
 <script> 
 import { getData } from 'common/js/dom'
 import Scroll from 'base/scroll/scroll'
+
+const ABCHOR_HEIGHT = 18
+
 export default {
   components: {
     Scroll
@@ -59,13 +62,22 @@ export default {
       let anchorIndex = getData(e.target, 'index')
       let fristTouch = e.touches[0]
       this.touch.y1 = fristTouch.pageY
-      this.$refs.listview.scrollToElement(this.$refs.listGroup[anchorIndex], 0)
+      this.touch.anchorIndex = anchorIndex
+      this._scrollTo(anchorIndex)
     },
     onShortcutTouchMove(e) {
-
+      let fristTouch = e.touches[0]
+      this.touch.y2 = fristTouch.pageY
+      let delta = (this.touch.y2 - this.touch.y1) / ABCHOR_HEIGHT | 0
+      let anchorIndex = parseInt(this.touch.anchorIndex) + delta
+      this._scrollTo(anchorIndex)
     },
+    _scrollTo(index) {
+      this.$refs.listview.scrollToElement(this.$refs.listGroup[index], 0)
+
+    }
   },
-  created(){
+  created() {
     this.touch = {}
   }
 }
