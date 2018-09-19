@@ -1,6 +1,9 @@
 <template>
   <Scroll class="listview"
           ref="listview"
+          :probeType="probeType"
+          :listenScroll="listenScroll"
+          @scroll="scroll"
           :data="data">
     <ul>
       <li class="list-group"
@@ -26,6 +29,7 @@
         <li class="item"
             v-for="(item, index) in shortcuList"
             :data-index="index"
+            :class="{'current':currenIndex===index}"
             :key="index">
           {{item}}
         </li>
@@ -41,6 +45,12 @@ import Scroll from 'base/scroll/scroll'
 const ABCHOR_HEIGHT = 18
 
 export default {
+  data() {
+    return {
+      scrollY: -1,
+      currenIndex: 0
+    }
+  },
   components: {
     Scroll
   },
@@ -72,13 +82,49 @@ export default {
       let anchorIndex = parseInt(this.touch.anchorIndex) + delta
       this._scrollTo(anchorIndex)
     },
+    scroll(pos) {
+      this.scrollY = pos.y
+    },
     _scrollTo(index) {
       this.$refs.listview.scrollToElement(this.$refs.listGroup[index], 0)
-
+    },
+    _calculateHeight() {
+      this.listHeight = []
+      const list = this.$refs.listGroup
+      let height = 0
+      this.listHeight.push(height)
+      for (let i = 0; i < list.length; i++) {
+        let item = list[i]
+        height += item.clientHeight
+        this.listHeight.push(height)
+      }
+    }
+  },
+  watch: {
+    data() {
+      setTimeout(() => {
+        this._calculateHeight()
+      }, 20)
+    },
+    scrollY(newY) {
+      const listHeight = this.listHeight
+      for (let i = 0; i < listHeight.length; i++) {
+        let height1 = listHeight[i]
+        let height2 = listHeight[i + 1]
+        if (!height2 || (-newY > height1 && -newY < height2)) {
+          this.currenIndex = i
+          console.log(this.currenIndex)
+          return
+        }
+      }
+      this.currenIndex = 0
     }
   },
   created() {
     this.touch = {}
+    this.listenScroll = true
+    this.listHeight = []
+    this.probeType = 3
   }
 }
 </script>
