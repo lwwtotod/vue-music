@@ -24,16 +24,25 @@
     </ul>
     <div class="list-shortcut"
          @touchmove.stop.prevent="onShortcutTouchMove"
-         @touchstart="onShortcutTouchStar">
+         @touchstart="onShortcutTouchStart">
       <ul>
         <li class="item"
             v-for="(item, index) in shortcuList"
             :data-index="index"
-            :class="{'current':currenIndex===index}"
+            :class="{'current':currentIndex===index}"
             :key="index">
           {{item}}
         </li>
       </ul>
+    </div>
+    <div class="list-fixed"
+         ref="fixed"
+         v-show="fixedTitle">
+      <h1 class="fixed-title">{{fixedTitle}}</h1>
+    </div>
+    <div v-show="!data.length"
+         class="loading-container">
+      <loading></loading>
     </div>
   </Scroll>
 </template>
@@ -41,51 +50,77 @@
 <script> 
 import { getData } from 'common/js/dom'
 import Scroll from 'base/scroll/scroll'
+import loading from 'base/loading/loading'
 
-const ABCHOR_HEIGHT = 18
+const ANCHOR_HEIGHT = 18
+const TITLE_HEIGHT = 30
 
 export default {
-  data() {
-    return {
-      scrollY: -1,
-      currenIndex: 0
-    }
-  },
-  components: {
-    Scroll
-  },
   props: {
     data: {
       type: Array,
       default: []
     },
   },
+  data() {
+    return {
+      scrollY: -1,
+      currentIndex: 0,
+      diff: -1
+    }
+  },
+  components: {
+    Scroll,
+    loading
+  },
+
   computed: {
     shortcuList() {
       return this.data.map((group) => {
         return group.title.substr(0, 1)
       })
+    },
+    fixedTitle() {
+      if (this.scrollY > 0) {
+        return ''
+      }
+      return this.data[this.currentIndex] ? this.data[this.currentIndex].title : ''
+      this.$refs.fixed.style.transform = `translate3d(0,${fixedTop}px,0)`
     }
   },
   methods: {
-    onShortcutTouchStar(e) {
+    selectItem(item) {
+      this.$emit('select', item)
+    },
+    onShortcutTouchStart(e) {
       let anchorIndex = getData(e.target, 'index')
-      let fristTouch = e.touches[0]
-      this.touch.y1 = fristTouch.pageY
+      let firstTouch = e.touches[0]
+      this.touch.y1 = firstTouch.pageY
       this.touch.anchorIndex = anchorIndex
+
       this._scrollTo(anchorIndex)
     },
     onShortcutTouchMove(e) {
-      let fristTouch = e.touches[0]
-      this.touch.y2 = fristTouch.pageY
-      let delta = (this.touch.y2 - this.touch.y1) / ABCHOR_HEIGHT | 0
+      let firstTouch = e.touches[0]
+      this.touch.y2 = firstTouch.pageY
+      let delta = (this.touch.y2 - this.touch.y1) / ANCHOR_HEIGHT | 0
       let anchorIndex = parseInt(this.touch.anchorIndex) + delta
+
       this._scrollTo(anchorIndex)
     },
     scroll(pos) {
       this.scrollY = pos.y
     },
     _scrollTo(index) {
+      if (!index && index !== 0) {
+        return
+      }
+      if (index < 0) {
+        index = 0
+      } else if (index > this.listHeight.length - 2) {
+        index = this.listHeight.length - 2
+      }
+      this.scrollY = -this.listHeight[index]
       this.$refs.listview.scrollToElement(this.$refs.listGroup[index], 0)
     },
     _calculateHeight() {
@@ -98,7 +133,7 @@ export default {
         height += item.clientHeight
         this.listHeight.push(height)
       }
-    }
+    },
   },
   watch: {
     data() {
@@ -108,16 +143,30 @@ export default {
     },
     scrollY(newY) {
       const listHeight = this.listHeight
-      for (let i = 0; i < listHeight.length; i++) {
+      // 当滚动到顶部，newY>0
+      if (newY > 0) {
+        this.currentIndex = 0
+        return
+      }
+      // 在中间部分滚动
+      for (let i = 0; i < listHeight.length - 1; i++) {
         let height1 = listHeight[i]
         let height2 = listHeight[i + 1]
-        if (!height2 || (-newY > height1 && -newY < height2)) {
-          this.currenIndex = i
-          console.log(this.currenIndex)
+        if (-newY >= height1 && -newY < height2) {
+          this.currentIndex = i
+          this.diff = height2 + newY
           return
         }
       }
-      this.currenIndex = 0
+      // 当滚动到底部，且-newY大于最后一个元素的上限
+      this.currentIndex = listHeight.length - 2
+    },
+    diff(newY) {
+      let fixedTop = (newY > 0 && newY < TITLE_HEIGHT) ? newY - TITLE_HEIGHT : 0
+      if (this.fixedTop === fixedTop) {
+        return
+      }
+      this.fixedTop = fixedTop
     }
   },
   created() {
