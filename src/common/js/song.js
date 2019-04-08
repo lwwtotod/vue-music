@@ -1,6 +1,9 @@
+import {getLyric} from 'api/song'
+import {ERR_OK} from 'api/config'
+import {Base64} from 'js-base64'
 
 export default class Song {
-  constructor({ id, mid, singer, name, album, duration, image, url }) {
+  constructor({id, mid, singer, name, album, duration, image, url}) {
     this.id = id
     this.mid = mid
     this.singer = singer
@@ -10,14 +13,26 @@ export default class Song {
     this.image = image
     this.url = url
   }
+
+  getLyric() {
+    if (this.lyric) {
+      return Promise.resolve(this.lyric)
+    }
+
+    return new Promise((resolve, reject) => {
+      getLyric(this.mid).then((res) => {
+        if (res.retcode === ERR_OK) {
+          this.lyric = Base64.decode(res.lyric)
+          resolve(this.lyric)
+        } else {
+          reject('no lyric')
+        }
+      })
+    })
+  }
 }
 
-export function createSong(musicData,res) {
-  // const songmid = musicData.songmid
-  // const fileName = `C400${musicData.songmid}.m4a`
-  // const vKey = res.data.items[0].vkey
-  // const t = new Date().getUTCMilliseconds()
-  // const guid = (Math.round(2147483647 * Math.random()) * t) % 1e10
+export function createSong(musicData) {
   return new Song({
     id: musicData.songid,
     mid: musicData.songmid,
@@ -25,13 +40,8 @@ export function createSong(musicData,res) {
     name: musicData.songname,
     album: musicData.albumname,
     duration: musicData.interval,
-    image: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${
-      musicData.albummid
-    }.jpg?max_age=2592000`,
-    // url: `http://isure.stream.qqmusic.qq.com/${fileName}?vkey=${vKey}&guid=${guid}&uin=2502&fromtag=66`,
-    // url: `http://dl.stream.qqmusic.qq.com/C400${musicData.songmid}.m4a?fromtag=38&guid=5931742855&vkey=${vKey}`
-    url:`http://ws.stream.qqmusic.qq.com/C100${musicData.songmid}.m4a?fromtag=0&guid=126548448`
-    // url: `http://isure.stream.qqmusic.qq.com/C100${musicData.songmid}.m4a?fromtag=32`
+    image: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${musicData.albummid}.jpg?max_age=2592000`,
+    url: `http://ws.stream.qqmusic.qq.com/${musicData.songid}.m4a?fromtag=46`
   })
 }
 
@@ -40,8 +50,9 @@ function filterSinger(singer) {
   if (!singer) {
     return ''
   }
-  singer.forEach(s => {
+  singer.forEach((s) => {
     ret.push(s.name)
   })
   return ret.join('/')
 }
+
